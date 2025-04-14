@@ -1,0 +1,86 @@
+.login-page {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    width: 100%;
+    padding: 1rem;
+    background: linear-gradient(135deg, #e0eafc, #cfdef3);
+    font-family: 'Segoe UI', sans-serif;
+    box-sizing: border-box;
+  }
+  
+  .login-card {
+    background: #fff;
+    padding: 2.5rem 2rem;
+    border-radius: 1.2rem;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+    width: 100%;
+    max-width: 380px;
+  }
+  
+  .login-header {
+    text-align: center;
+    margin-bottom: 1.5rem;
+  }
+  
+  .app-title {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #2563eb;
+  }
+  
+  .subtitle {
+    color: #555;
+    margin-top: 0.2rem;
+    font-size: 0.95rem;
+  }
+  
+  .login-form label {
+    font-weight: 600;
+    font-size: 0.9rem;
+    margin-top: 1rem;
+    display: block;
+    color: #333;
+  }
+  
+  .login-form input {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid #ddd;
+    border-radius: 0.5rem;
+    margin-top: 0.3rem;
+    font-size: 1rem;
+    background-color: #f9fafb;
+  }
+  
+  .login-button {
+    width: 100%;
+    padding: 0.75rem;
+    margin-top: 1.5rem;
+    background-color: #2563eb;
+    color: #fff;
+    border: none;
+    border-radius: 0.6rem;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+  }
+  
+  .login-button:hover {
+    background-color: #1e40af;
+  }
+  
+  .signup-link {
+    text-align: center;
+    margin-top: 1.5rem;
+    font-size: 0.9rem;
+    color: #555;
+  }
+  
+  .signup-link a {
+    color: #2563eb;
+    text-decoration: none;
+    font-weight: 600;
+  }

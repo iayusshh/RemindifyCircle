@@ -1,0 +1,213 @@
+body {
+    font-family: 'Segoe UI', sans-serif;
+}
+  
+.app-container {
+    background: #f7f9fc;
+    min-height: 100vh;
+    padding-bottom: 80px;
+}
+
+.app-wrapper-full {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+.page-content {
+    flex: 1;
+}
+
+.app-header {
+    display: flex;
+    justify-content: space-between;
+    padding: 16px;
+    background: #ffffff;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.06);
+}
+  
+.logo {
+    font-size: 1.4rem;
+    font-weight: bold;
+    color: #1f2937;
+}
+  
+.header-icons {
+    display: flex;
+    gap: 16px;
+    align-items: center;
+}
+  
+.notification {
+    position: relative;
+    font-size: 1.2rem;
+    cursor: pointer;
+}
+  
+.main-content {
+    padding: 16px;
+}
+  
+.title-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+  
+.title-row h2 {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #111827;
+}
+  
+.primary-button {
+    background: #2563eb;
+    color: #fff;
+    padding: 6px 14px;
+    border-radius: 20px;
+    border: none;
+    font-weight: 600;
+    cursor: pointer;
+}
+  
+.primary-button:hover {
+    background: #1d4ed8;
+}
+  
+.edit-btn {
+    display: flex;
+    align-items: center;
+    margin: 12px 0;
+    background: none;
+    border: none;
+    color: #374151;
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+}
+  
+.reminder-card {
+    background: #fff;
+    border-radius: 14px;
+    padding: 16px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+    margin-bottom: 16px;
+}
+  
+.reminder-meta {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.85rem;
+    color: #6b7280;
+    margin-bottom: 6px;
+}
+  
+.tag {
+    color: #3b82f6;
+    font-weight: 600;
+}
+  
+.reminder-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #111827;
+}
+  
+.reminder-subtitle {
+    color: #6b7280;
+    font-size: 0.85rem;
+}
+  
+.reminder-from {
+    margin-top: 6px;
+    color: #4b5563;
+    font-size: 0.85rem;
+}
+  
+.snooze-options {
+    margin-top: 12px;
+    display: flex;
+    gap: 8px;
+}
+  
+.snooze-options button {
+    background: #f3f4f6;
+    border: none;
+    border-radius: 20px;
+    padding: 4px 12px;
+    font-size: 0.85rem;
+    color: #374151;
+    cursor: pointer;
+}
+  
+.bottom-nav {
+  display: flex;
+  justify-content: space-around;
+  background-color: #ffffff;
+  border-top: 1px solid #e5e7eb;
+  padding: 12px 0;
+  position: sticky;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 10;
+}
+  
+.nav-item {
+    font-size: 0.85rem;
+    color: #6b7280;
+}
+  
+.nav-item.active {
+    color: #2563eb;
+    font-weight: 600;
+}
+
+.notification-popup {
+    position: absolute;
+    top: 40px;
+    right: 0;
+    width: 200px;
+    background: #ffffff;
+    border-radius: 10px;
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+    padding: 10px;
+    font-size: 0.85rem;
+    z-index: 100;
+}
+
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    background-color: rgba(0, 0, 0, 0.4);
+    z-index: 100;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.modal-content {
+    background: white;
+    padding: 20px;
+    border-radius: 12px;
+    width: 90%;
+    max-width: 400px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.modal-content input,
+.modal-content textarea,
+.modal-content select {
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    font-size: 0.9rem;
+}
+
+.modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}

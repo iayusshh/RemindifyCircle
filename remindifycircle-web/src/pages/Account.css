@@ -1,0 +1,221 @@
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 999;
+}
+
+.modal-content {
+  background-color: #2d2d34;
+  color: white;
+  padding: 20px;
+  border-radius: 12px;
+  width: 90%;
+  max-width: 400px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.modal-content input {
+  background-color: #1f1f24;
+  color: white;
+  border: 1px solid #4b5563;
+  padding: 10px;
+  border-radius: 8px;
+  font-size: 1rem;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.modal-actions button {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.modal-actions .save-btn {
+  background-color: #3b82f6;
+  color: white;
+}
+
+.modal-actions .cancel-btn {
+  background-color: transparent;
+  color: #ccc;
+}
+
+/* Account main container */
+.account-page {
+  padding: 16px;
+  font-family: 'Segoe UI', sans-serif;
+  background-color: #f9fafb;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+/* Profile area */
+.account-profile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 24px;
+  margin-bottom: 24px;
+}
+
+.avatar-circle {
+  width: 80px;
+  height: 80px;
+  background-color: #e5e7eb;
+  color: #374151;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border-radius: 50%;
+  font-size: 2rem;
+  font-weight: bold;
+}
+
+.username {
+  margin-top: 12px;
+  font-size: 1rem;
+  color: #6b7280;
+}
+
+.edit-profile {
+  margin-top: 8px;
+  background-color: #e5e7eb;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.account-preferences {
+  background-color: var(--preferences-bg, #ffffff);
+  border-radius: 10px;
+  padding: 16px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  color: var(--preferences-text, #1f2937);
+}
+
+.account-preferences h3 {
+  font-size: 1.1rem;
+  margin-bottom: 12px;
+}
+
+.account-preferences ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.account-preferences li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 0;
+  border-bottom: 1px solid #2f2f2f;
+  font-size: 0.95rem;
+}
+
+.logout-button {
+  display: flex;
+  justify-content: center;
+  margin-top: 24px;
+}
+
+.logout-button button {
+  background-color: #ef4444;
+  color: white;
+  padding: 8px 16px;
+  border: none;
+  font-weight: bold;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+/* Bottom nav */
+.footer-nav {
+  display: flex;
+  justify-content: space-around;
+  background-color: #ffffff;
+  border-top: 1px solid #e5e7eb;
+  padding: 12px 0;
+  position: sticky;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 10;
+}
+
+.footer-nav .nav-item {
+  font-size: 0.9rem;
+  color: #6b7280;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.footer-nav .nav-item.active {
+  color: #3b82f6;
+  font-weight: 600;
+}
+
+.account-preferences input[type='checkbox'] {
+  width: 40px;
+  height: 20px;
+  appearance: none;
+  background-color: #444;
+  border-radius: 20px;
+  position: relative;
+  outline: none;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.account-preferences input[type='checkbox']:checked {
+  background-color: #3b82f6;
+}
+
+.account-preferences input[type='checkbox']::before {
+  content: '';
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  top: 2px;
+  left: 2px;
+  background-color: white;
+  transition: transform 0.3s ease;
+}
+
+.account-preferences input[type='checkbox']:checked::before {
+  transform: translateX(20px);
+}
+
+body.dark-mode {
+  background-color: #111827;
+  color: #ffffff;
+}
+
+body.dark-mode .account-preferences {
+  --preferences-bg: #1f1f24;
+  --preferences-text: #e5e7eb;
+}
+
+.account-page.large-text {
+  font-size: 1.2rem;
+}
