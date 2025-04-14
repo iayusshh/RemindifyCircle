@@ -67,8 +67,18 @@ const Account = () => {
               <button className="save-btn" onClick={async () => {
                 const { data: { user } } = await supabase.auth.getUser();
 
-                if (!updatedFullName || !updatedUsername) {
-                  setUsernameError('Fields cannot be empty');
+                if (!updatedFullName.trim() || !updatedUsername.trim()) {
+                  setUsernameError('All fields are required.');
+                  return;
+                }
+
+                if (updatedUsername.length < 3) {
+                  setUsernameError('Username should be at least 3 characters.');
+                  return;
+                }
+
+                if (updatedFullName.length < 3) {
+                  setUsernameError('Full name should be at least 3 characters.');
                   return;
                 }
 
