@@ -5,18 +5,27 @@ import './Account.css';
 
 const Account = () => {
   const [user, setUser] = useState(null);
-  const [showModal, setShowModal] = useState(false);
-  const [username, setUsername] = useState('username');
-  const [fullname, setFullname] = useState('Full Name');
+  const [editMode, setEditMode] = useState(false);
+  const [updatedFullName, setUpdatedFullName] = useState('');
+  const [updatedUsername, setUpdatedUsername] = useState('');
   const [showToast, setShowToast] = useState(false);
+  const [usernameUpdated, setUsernameUpdated] = useState(false);
+  const [usernameError, setUsernameError] = useState('');
   const navigate = useNavigate();
 
   useEffect(() => {
     const getUser = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       setUser(user);
-      setUsername(user?.user_metadata?.username || 'username');
-      setFullname(user?.user_metadata?.full_name || 'Full Name');
+      setUpdatedFullName(user?.user_metadata?.full_name || 'Full Name');
+      setUpdatedUsername(user?.user_metadata?.username || 'username');
+
+      const { data } = await supabase
+        .from('users')
+        .select('username_updated')
+        .eq('id', user.id)
+        .single();
+      setUsernameUpdated(data?.username_updated || false);
     };
     getUser();
   }, []);
@@ -25,36 +34,80 @@ const Account = () => {
     <div className="account-page">
       <h2>Account Settings</h2>
       <div className="account-profile">
-        <div className="avatar-circle">{username?.charAt(0).toUpperCase() || '?'}</div>
-        <div className="username">@{username || 'username'}</div>
-        <button className="edit-profile" onClick={() => setShowModal(true)}>Edit Profile</button>
+        <div className="avatar-circle">{updatedUsername?.charAt(0).toUpperCase() || '?'}</div>
+        <div className="username">@{updatedUsername || 'username'}</div>
+        <button className="edit-profile" onClick={() => setEditMode(true)}>Edit Profile</button>
       </div>
       <div className="logout-button">
         <button onClick={async () => { await supabase.auth.signOut(); window.location.href = '/'; }}>Logout</button>
       </div>
-      {showModal && (
-        <div className="modal-overlay">
-          <div className="modal-content">
+      {editMode && (
+        <div className="edit-profile-dialog">
+          <div className="dialog-box">
             <h3>Edit Profile</h3>
-            <input type="text" value={username} onChange={(e) => setUsername(e.target.value)} placeholder="Username" />
-            <input type="text" value={fullname} onChange={(e) => setFullname(e.target.value)} placeholder="Full Name" />
+            <input
+              type="text"
+              value={updatedUsername}
+              onChange={(e) => setUpdatedUsername(e.target.value)}
+              placeholder="Username"
+            />
+            <input
+              type="text"
+              value={updatedFullName}
+              onChange={(e) => setUpdatedFullName(e.target.value)}
+              placeholder="Full Name"
+            />
+            {usernameError && <p className="error-text">{usernameError}</p>}
             <div className="modal-actions">
-              <button className="cancel-btn" onClick={() => setShowModal(false)}>Cancel</button>
-              <button
-                className="save-btn"
-                onClick={async () => {
-                  const { data: { user } } = await supabase.auth.getUser();
-                  await supabase
+              <button className="cancel-btn" onClick={() => {
+                setEditMode(false);
+                setUpdatedFullName(fullname);
+                setUpdatedUsername(username);
+              }}>Cancel</button>
+              <button className="save-btn" onClick={async () => {
+                const { data: { user } } = await supabase.auth.getUser();
+
+                if (!updatedFullName || !updatedUsername) {
+                  setUsernameError('Fields cannot be empty');
+                  return;
+                }
+
+                if (!usernameUpdated && updatedUsername !== user?.user_metadata?.username) {
+                  const { data: existing } = await supabase
                     .from('users')
-                    .update({ username, full_name: fullname })
-                    .eq('id', user.id);
-                  setShowModal(false);
+                    .select('id')
+                    .eq('username', updatedUsername)
+                    .single();
+
+                  if (existing) {
+                    setUsernameError('Username already taken');
+                    return;
+                  }
+                }
+
+                const updateData = { full_name: updatedFullName };
+                if (!usernameUpdated && updatedUsername !== user?.user_metadata?.username) {
+                  updateData.username = updatedUsername;
+                  updateData.username_updated = true;
+                }
+
+                const { error } = await supabase
+                  .from('users')
+                  .update(updateData)
+                  .eq('id', user.id);
+
+                if (!error) {
+                  setFullname(updatedFullName);
+                  setUsername(updatedUsername);
+                  setEditMode(false);
                   setShowToast(true);
                   setTimeout(() => setShowToast(false), 3000);
-                }}
-              >
-                Save
-              </button>
+                  setUsernameError('');
+                } else {
+                  alert('Error updating profile');
+                  console.error(error);
+                }
+              }}>Save</button>
             </div>
           </div>
         </div>

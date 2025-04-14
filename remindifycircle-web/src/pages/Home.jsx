@@ -14,6 +14,8 @@ export default function Home() {
   const [reminderSubject, setReminderSubject] = useState('');
   const [reminderBody, setReminderBody] = useState('');
   const [reminderTime, setReminderTime] = useState('');
+  const [receivedReminders, setReceivedReminders] = useState([]);
+  const [editMode, setEditMode] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -74,10 +76,24 @@ export default function Home() {
       }
     };
 
+    const fetchReceivedReminders = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      const { data, error } = await supabase
+        .from('reminders')
+        .select('*')
+        .eq('recipient_id', user.id)
+        .order('scheduled_time', { ascending: true });
+
+      if (!error) {
+        setReceivedReminders(data);
+      }
+    };
+
     fetchReminders();
     fetchUserProfile();
     fetchCircleMembers();
     fetchPreferences();
+    fetchReceivedReminders();
   }, []);
 
   const handleSnooze = async (reminderId, minutes) => {
@@ -103,10 +119,22 @@ export default function Home() {
           <div className="header-icons">
             <div className="notification" onClick={() => setShowNotifications(!showNotifications)}>
               <span className="dot"></span>
-              🔔
+              <span className="bell-icon">🔔</span>
               {showNotifications && (
                 <div className="notification-popup">
-                  <p>No new notifications</p>
+                  <h4>Incoming Reminders</h4>
+                  {receivedReminders.length === 0 ? (
+                    <p>No reminders</p>
+                  ) : (
+                    <ul>
+                      {receivedReminders.map((reminder) => (
+                        <li key={reminder.id}>
+                          <strong>{reminder.content_title}</strong>
+                          <p>{new Date(reminder.scheduled_time).toLocaleString()}</p>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
                 </div>
               )}
             </div>
@@ -117,7 +145,9 @@ export default function Home() {
           <main className="main-content">
             <div className="title-row">
               <h2>Today's reminders</h2>
-              <button className="primary-button" onClick={() => setShowReminderModal(true)}>+ New Reminder</button>
+              <button className="edit-btn" onClick={() => setEditMode(!editMode)}>
+                {editMode ? 'Done Editing' : '✏️ Edit Reminders'}
+              </button>
             </div>
             <button className="edit-btn">✏️ Edit Reminders</button>
 
@@ -148,6 +178,26 @@ export default function Home() {
                       <button key={label} onClick={() => handleSnooze(r.id, value)}>{label}</button>
                     ))}
                   </div>
+                  {editMode && (
+                    <div className="reminder-actions">
+                      <button onClick={() => {
+                        setReminderRecipient(r.recipient_id);
+                        setReminderSubject(r.content_title);
+                        setReminderBody(r.content_text);
+                        setReminderTime(new Date(r.scheduled_time).toISOString().slice(0, 16));
+                        setShowReminderModal(true);
+                      }}>Edit</button>
+                      <button onClick={async () => {
+                        const { error } = await supabase
+                          .from('reminders')
+                          .delete()
+                          .eq('id', r.id);
+                        if (!error) {
+                          fetchReminders();
+                        }
+                      }}>Delete</button>
+                    </div>
+                  )}
                 </div>
               ))
             )}

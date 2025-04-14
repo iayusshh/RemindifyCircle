@@ -211,3 +211,18 @@ body {
     justify-content: flex-end;
     gap: 10px;
 }
+
+.reminder-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 10px;
+  }
+  
+  .reminder-actions button {
+    background-color: #f3f4f6;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 4px;
+    font-size: 0.9rem;
+    cursor: pointer;
+  }
