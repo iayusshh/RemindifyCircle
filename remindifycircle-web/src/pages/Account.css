@@ -257,3 +257,42 @@ body.dark-mode .account-preferences {
   color: #ef4444;
   font-size: 0.85rem;
 }
+
+@media (max-width: 600px) {
+  .account-page {
+    padding: 12px;
+  }
+
+  .avatar-circle {
+    width: 60px;
+    height: 60px;
+    font-size: 1.5rem;
+  }
+
+  .username {
+    font-size: 0.9rem;
+  }
+
+  .edit-profile {
+    font-size: 0.85rem;
+    padding: 5px 10px;
+  }
+
+  .dialog-box {
+    padding: 16px;
+  }
+
+  .dialog-box input {
+    font-size: 0.9rem;
+    padding: 8px;
+  }
+
+  .modal-actions button {
+    font-size: 0.85rem;
+    padding: 6px 12px;
+  }
+
+  .footer-nav .nav-item {
+    font-size: 0.75rem;
+  }
+}

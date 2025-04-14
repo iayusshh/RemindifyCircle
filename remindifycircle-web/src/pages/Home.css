@@ -216,13 +216,89 @@ body {
     display: flex;
     gap: 10px;
     margin-top: 10px;
-  }
+}
   
-  .reminder-actions button {
+.reminder-actions button {
     background-color: #f3f4f6;
     border: none;
     padding: 6px 12px;
     border-radius: 4px;
     font-size: 0.9rem;
     cursor: pointer;
+}
+
+.dismiss-btn {
+    margin-top: 4px;
+    background: #f87171;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 4px 8px;
+    cursor: pointer;
+    font-size: 0.8rem;
+}
+
+.bell-icon {
+  position: relative;
+  font-size: 1.5rem;
+  cursor: pointer;
+}
+
+.badge {
+  position: absolute;
+  top: -6px;
+  right: -10px;
+  background-color: red;
+  color: white;
+  font-size: 0.7rem;
+  padding: 2px 6px;
+  border-radius: 50%;
+  font-weight: bold;
+  line-height: 1;
+}
+
+@media (max-width: 600px) {
+  .app-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
   }
+
+  .main-content {
+    padding: 12px;
+  }
+
+  .reminder-card {
+    padding: 12px;
+    font-size: 0.95rem;
+  }
+
+  .reminder-title {
+    font-size: 1rem;
+  }
+
+  .reminder-subtitle,
+  .reminder-from,
+  .tag {
+    font-size: 0.8rem;
+  }
+
+  .edit-btn,
+  .primary-button {
+    font-size: 0.8rem;
+    padding: 5px 12px;
+  }
+
+  .bottom-nav {
+    padding: 10px 0;
+  }
+
+  .nav-item {
+    font-size: 0.75rem;
+  }
+
+  .badge {
+    font-size: 0.65rem;
+    padding: 1px 5px;
+  }
+}

@@ -7,6 +7,8 @@ export default function Home() {
   const [preferences, setPreferences] = useState({ largeText: false });  
   const [reminders, setReminders] = useState([]);
   const [showNotifications, setShowNotifications] = useState(false);
+  const [receivedReminders, setReceivedReminders] = useState([]);
+  const unreadCount = receivedReminders.length;
   const [showReminderModal, setShowReminderModal] = useState(false);
   const [circleMembers, setCircleMembers] = useState([]);
   const [reminderError, setReminderError] = useState('');
@@ -14,7 +16,6 @@ export default function Home() {
   const [reminderSubject, setReminderSubject] = useState('');
   const [reminderBody, setReminderBody] = useState('');
   const [reminderTime, setReminderTime] = useState('');
-  const [receivedReminders, setReceivedReminders] = useState([]);
   const [editMode, setEditMode] = useState(false);
   const navigate = useNavigate();
 
@@ -82,6 +83,7 @@ export default function Home() {
         .from('reminders')
         .select('*')
         .eq('recipient_id', user.id)
+        .eq('read', false)
         .order('scheduled_time', { ascending: true });
 
       if (!error) {
@@ -118,8 +120,10 @@ export default function Home() {
           <h1 className="logo">RemindifyCircle</h1>
           <div className="header-icons">
             <div className="notification" onClick={() => setShowNotifications(!showNotifications)}>
-              <span className="dot"></span>
-              <span className="bell-icon">🔔</span>
+              <span className="bell-icon">
+                🔔
+                {unreadCount > 0 && <span className="badge">{unreadCount}</span>}
+              </span>
               {showNotifications && (
                 <div className="notification-popup">
                   <h4>Incoming Reminders</h4>
@@ -131,6 +135,20 @@ export default function Home() {
                         <li key={reminder.id}>
                           <strong>{reminder.content_title}</strong>
                           <p>{new Date(reminder.scheduled_time).toLocaleString()}</p>
+                          <button
+                            className="dismiss-btn"
+                            onClick={async () => {
+                              const { error } = await supabase
+                                .from('reminders')
+                                .update({ read: true })
+                                .eq('id', reminder.id);
+                              if (!error) {
+                                setReceivedReminders((prev) => prev.filter(r => r.id !== reminder.id));
+                              }
+                            }}
+                          >
+                            Dismiss
+                          </button>
                         </li>
                       ))}
                     </ul>
@@ -149,7 +167,6 @@ export default function Home() {
                 {editMode ? 'Done Editing' : '✏️ Edit Reminders'}
               </button>
             </div>
-            <button className="edit-btn">✏️ Edit Reminders</button>
 
             {reminders.length === 0 ? (
               <p className="empty-text">No reminders yet.</p>
@@ -243,8 +260,18 @@ export default function Home() {
                   <button
                     className="primary-button"
                     onClick={async () => {
-                      if (!reminderRecipient || !reminderSubject || !reminderBody || !reminderTime) {
-                        alert('Please fill all fields.');
+                      if (!reminderRecipient || !reminderSubject.trim() || !reminderBody.trim() || !reminderTime) {
+                        alert('All fields are required.');
+                        return;
+                      }
+
+                      if (reminderSubject.length < 3) {
+                        alert('Subject should be at least 3 characters.');
+                        return;
+                      }
+
+                      if (reminderBody.length < 5) {
+                        alert('Body should be at least 5 characters.');
                         return;
                       }
 
