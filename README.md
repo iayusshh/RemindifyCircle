@@ -1,12 +1,75 @@
-# React + Vite
+# RemindifyCircle
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+RemindifyCircle is a smart, circle-based reminder web application designed to help users stay connected and productive by sending and receiving scheduled reminders from trusted contacts.
 
-Currently, two official plugins are available:
+## 📌 Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- 🔔 Send and receive reminders (immediate or scheduled)
+- 💤 Snooze reminders for later
+- ✅ Mark as done or undo reminders
+- 👥 Add people to your Circle via unique usernames
+- 🔄 Accept or reject Circle requests
+- 🗂️ Filter reminders: All, Pending, Snoozed, Done
+- 🔐 User authentication via Supabase (email/password)
+- ⚙️ Account management with one-time username setup
+- 📱 Progressive Web App support (installable, mobile-friendly)
+- 🚀 Deployed on Vercel
 
-## Expanding the ESLint configuration
+## 🔧 Tech Stack
 
-If you are developing a production application, we recommend using TypeScript and enable type-aware lint rules. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+- **Frontend**: React + Vite, Tailwind CSS
+- **Backend**: Supabase (PostgreSQL + Auth + Storage)
+- **Deployment**: Vercel
+- **State Management**: React Hooks
+
+## 📁 Project Structure
+
+```
+📦 remindifycircle-web
+├── public/
+│   ├── favicon.ico
+│   ├── index.html
+├── src/
+│   ├── pages/
+│   ├── components/
+│   ├── App.jsx
+│   ├── supabaseClient.js
+├── .gitignore
+├── package.json
+├── tailwind.config.js
+```
+
+## 🚀 Live Demo
+
+🌐 Vercel: [https://your-vercel.vercel.app](https://your-vercel.vercel.app)
+
+## 🛠️ Run Locally
+
+1. Clone the repository:
+```bash
+git clone https://github.com/your-username/remindifycircle.git
+```
+
+2. Install dependencies:
+```bash
+npm install
+```
+
+3. Add your environment variables in `.env`:
+```
+VITE_SUPABASE_URL=your-supabase-url
+VITE_SUPABASE_ANON_KEY=your-anon-key
+```
+
+4. Start the development server:
+```bash
+npm run dev
+```
+
+## 🙋‍♂️ Author
+
+**Ayush Anand**
+
+---
+
+© 2025 RemindifyCircle. All rights reserved.
