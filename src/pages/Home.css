@@ -61,17 +61,20 @@ body {
 }
   
 .primary-button {
-    background: #2563eb;
+    background: #ef4444; /* red-500 */
     color: #fff;
-    padding: 6px 14px;
+    padding: 8px 18px;
     border-radius: 20px;
     border: none;
     font-weight: 600;
     cursor: pointer;
+    font-size: 1.08rem;
+    display: block;
+    margin: 0 auto;
 }
   
 .primary-button:hover {
-    background: #1d4ed8;
+    background: #dc2626; /* red-600 */
 }
   
 .edit-btn {
@@ -328,4 +331,21 @@ body {
 .filter-btn.active-filter {
   background-color: #2563eb;
   color: white;
+}
+
+.floating-add-button {
+  position: fixed;
+  bottom: 80px;
+  right: 20px;
+  background-color: #3b82f6;
+  color: white;
+  font-size: 24px;
+  font-weight: bold;
+  border-radius: 50%;
+  width: 56px;
+  height: 56px;
+  border: none;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  cursor: pointer;
+  z-index: 20;
 }

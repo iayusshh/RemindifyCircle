@@ -18,6 +18,13 @@ export default function Circle() {
   const [editingRelationshipId, setEditingRelationshipId] = useState(null);
   const [newRelationship, setNewRelationship] = useState('');
   const [showSentModal, setShowSentModal] = useState(false);
+  const [selectedMember, setSelectedMember] = useState(null);
+  const [showMemberOptions, setShowMemberOptions] = useState(false);
+  const [showSendReminderDialog, setShowSendReminderDialog] = useState(false);
+  const [reminderSubject, setReminderSubject] = useState('');
+  const [reminderBody, setReminderBody] = useState('');
+  const [reminderTime, setReminderTime] = useState('');
+  const [showRenameDialog, setShowRenameDialog] = useState(false);
 
   useEffect(() => {
     const applyPreferences = async () => {
@@ -116,11 +123,10 @@ export default function Circle() {
     await supabase
       .from('circle')
       .delete()
-      .or(`and(sender_id.eq.${user.id},recipient_id.eq.${memberId}),and(sender_id.eq.${memberId},recipient_id.eq.${user.id})`);
-
-  setCircle(prev => prev.filter(c => c.member_id !== memberId));
-  alert("Contact has been removed from your circle.");
-  };
+      .or(`and(sender_id.eq.${user.id},recipient_id.eq.${memberId}),and(sender_id.eq.${memberId},recipient_id.eq.${user.id})`); 
+      setCircle(prev => prev.filter(c => c.member_id !== memberId));
+      alert("Contact has been removed from your circle.");
+    };
 
   return (
     <div className="app-wrapper-full">
@@ -129,6 +135,83 @@ export default function Circle() {
           <h2>Your Circle</h2>
           <button className="invite-btn" onClick={() => setShowAddDialog(true)}>+ Add Contact</button>
         </div>
+        {showMemberOptions && selectedMember && (
+          <div className="modal-overlay">
+            <div className="modal-content fade-in scale-up" style={{ backgroundColor: '#fff', color: '#000' }}>
+              <h3>{selectedMember.full_name || selectedMember.username}</h3>
+              <button className="primary-button" onClick={() => {
+                setEditingRelationshipId(selectedMember.member_id);
+                setNewRelationship(selectedMember.relationship);
+                setShowRenameDialog(true);
+                setShowMemberOptions(false);
+              }}>
+  ✏️ Rename Relationship
+</button>
+
+<button
+  className="primary-button"
+  onClick={() => {
+    setReminderSubject('');
+    setReminderBody('');
+    setReminderTime('');
+    setShowSendReminderDialog(true);
+    setShowMemberOptions(false);
+  }}
+>
+  🔔 Send Reminder
+</button>
+
+<button
+  className="primary-button"
+  onClick={() => setShowMemberOptions(false)}
+>
+  Close
+</button>
+              
+
+            </div>
+          </div>
+        )}
+
+        {showRenameDialog && selectedMember && (
+          <div className="modal-overlay">
+            <div className="modal-content fade-in scale-up" style={{ backgroundColor: '#fff', color: '#000' }}>
+              <h3>Rename Relationship</h3>
+              <input
+                type="text"
+                placeholder="Enter new relationship"
+                value={newRelationship}
+                onChange={(e) => setNewRelationship(e.target.value)}
+              />
+              <div style={{ marginTop: '10px' }}>
+                <button className="primary-button" onClick={async () => {
+                  const { data: { user } } = await supabase.auth.getUser();
+                  const { error } = await supabase
+                    .from('circle')
+                    .update({ relationship: newRelationship })
+                    .or(`and(sender_id.eq.${user.id},recipient_id.eq.${selectedMember.member_id}),and(sender_id.eq.${selectedMember.member_id},recipient_id.eq.${user.id})`);
+                  if (!error) {
+                    setCircle(prev =>
+                      prev.map(c =>
+                        c.member_id === selectedMember.member_id
+                          ? { ...c, relationship: newRelationship }
+                          : c
+                      )
+                    );
+                    setEditingRelationshipId(null);
+                    setNewRelationship('');
+                    setShowRenameDialog(false);
+                  }
+                }}>
+                  Save
+                </button>
+                <button onClick={() => setShowRenameDialog(false)} style={{ marginLeft: '10px' }}>
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         <input type="text" className="search compact-search" placeholder="Search your circle" onChange={(e) => setSearchUsername(e.target.value)} />
         <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
@@ -240,8 +323,14 @@ export default function Circle() {
                     </>
                   ) : (
                     <>
-                      <span>
-                        {m.full_name || m.username || m.member_id}
+                      <span
+                        onClick={() => {
+                          setSelectedMember(m);
+                          setShowMemberOptions(true);
+                        }}
+                        style={{ cursor: 'pointer' }}
+                      >
+                        <strong>{m.full_name || m.username || m.member_id}</strong>
                         {m.username && (
                           <span style={{ fontStyle: 'italic', fontSize: '0.85em', marginLeft: '6px', color: '#555' }}>
                             @{m.username}
@@ -372,6 +461,81 @@ export default function Circle() {
           </div>
         )}
 
+{showSendReminderDialog && selectedMember && (
+          <div className="modal-overlay">
+            <div className="modal-content fade-in scale-up" style={{ backgroundColor: '#fff', color: '#000' }}>
+              <h3>Send Reminder</h3>
+              <input
+                type="text"
+                placeholder="Subject (bold)"
+                value={reminderSubject}
+                onChange={(e) => setReminderSubject(e.target.value)}
+                style={{ fontWeight: 'bold', marginBottom: '10px', backgroundColor: '#fff', color: '#000' }}
+              />
+              <textarea
+                placeholder="Message (120 words max)"
+                maxLength={120 * 6}
+                value={reminderBody}
+                onChange={(e) => setReminderBody(e.target.value)}
+                rows={4}
+                style={{ width: '100%', marginBottom: '10px' }}
+              />
+              <input
+                type="datetime-local"
+                value={reminderTime}
+                onChange={(e) => setReminderTime(e.target.value)}
+                style={{ backgroundColor: '#fff', color: '#000', width: '100%', padding: '8px', marginBottom: '10px' }}
+              />
+              <div style={{ display: 'flex', justifyContent: 'space-between', gap: '10px', marginTop: '10px' }}>
+                <button
+                  onClick={() => setShowSendReminderDialog(false)}
+                  style={{
+                    flex: 1,
+                    backgroundColor: '#f87171',
+                    color: '#fff',
+                    padding: '10px',
+                    borderRadius: '6px',
+                    fontWeight: 'bold'
+                  }}
+                >
+                  Cancel
+                </button>
+                <button
+                  className="primary-button"
+                  onClick={async () => {
+                    const { data: { user } } = await supabase.auth.getUser();
+                    const { error } = await supabase.from('reminders').insert([
+                      {
+                        sender_id: user.id,
+                        recipient_id: selectedMember.member_id,
+                        subject: reminderSubject,
+                        body: reminderBody,
+                        scheduled_at: reminderTime,
+                        status: 'pending',
+                        read: false
+                      }
+                    ]);
+                    if (!error) {
+                      alert('Reminder sent!');
+                      setShowSendReminderDialog(false);
+                    }
+                  }}
+                  style={{
+                    flex: 1,
+                    backgroundColor: '#3b82f6',
+                    color: '#fff',
+                    padding: '10px',
+                    borderRadius: '6px',
+                    fontWeight: 'bold'
+                  }}
+                >
+                  Send
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         <div className="footer-nav fixed-footer">
           <div className="nav-item" onClick={() => navigate('/home')}>🏠 Home</div>
           <div className="nav-item active" onClick={() => navigate('/circle')}>👥 Circle</div>
@@ -379,5 +543,7 @@ export default function Circle() {
         </div>
       </div>
     </div>
+
+    
   );
 }

@@ -315,3 +315,16 @@
   margin: 12px auto 16px auto;
   display: block;
 }
+
+.primary-button {
+  background-color: #3b82f6;
+  color: white;
+  padding: 12px 16px;
+  font-size: 1rem;
+  font-weight: bold;
+  border: none;
+  border-radius: 8px;
+  margin-top: 10px;
+  width: 100%;
+  cursor: pointer;
+}

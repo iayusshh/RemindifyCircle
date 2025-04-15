@@ -18,6 +18,8 @@ export default function Home() {
   const [reminderTime, setReminderTime] = useState('');
   const [editMode, setEditMode] = useState(false);
   const [statusFilter, setStatusFilter] = useState('all');
+  const [showSelectRecipient, setShowSelectRecipient] = useState(false);
+  const [selectedRecipient, setSelectedRecipient] = useState(null);
   const navigate = useNavigate();
 
   const fetchReminders = async () => {
@@ -27,9 +29,9 @@ export default function Home() {
       .from('reminders')
       .select(`
         id,
-        content_title,
-        content_text,
-        scheduled_time,
+        subject,
+        body,
+        scheduled_at,
         status,
         sender:sender_id (
           username
@@ -70,17 +72,29 @@ export default function Home() {
 
     const fetchCircleMembers = async () => {
       const { data: { user } } = await supabase.auth.getUser();
-
-      const { data: members } = await supabase
+ 
+      const { data: members, error } = await supabase
         .from('circle')
-        .select('member_id, relationship')
-        .eq('owner_id', user.id);
-
-      if (members && members.length > 0) {
-        setCircleMembers(members);
+        .select('sender_id, recipient_id, relationship, status')
+        .or(`sender_id.eq.${user.id},recipient_id.eq.${user.id}`)
+        .eq('status', 'accepted');
+ 
+      if (error) {
+        console.error('Failed to fetch circle members:', error);
+        return;
+      }
+ 
+      const circle = members.map(member => {
+        const memberId = member.sender_id === user.id ? member.recipient_id : member.sender_id;
+        return { member_id: memberId, relationship: member.relationship };
+      });
+ 
+      if (circle.length > 0) {
+        setCircleMembers(circle);
         setReminderError('');
       } else {
-        setReminderError('No one in your circle. Head to the Circle tab.');
+        setCircleMembers([]);
+        setReminderError('Your circle is empty. Please add someone first.');
       }
     };
 
@@ -154,8 +168,8 @@ export default function Home() {
                     <ul>
                       {receivedReminders.map((reminder) => (
                         <li key={reminder.id}>
-                          <strong>{reminder.content_title}</strong>
-                          <p>{new Date(reminder.scheduled_time).toLocaleString()}</p>
+                          <strong>{reminder.subject}</strong>
+                          <p>{new Date(reminder.scheduled_at).toLocaleString()}</p>
                           <button
                             className="dismiss-btn"
                             onClick={async () => {
@@ -203,20 +217,24 @@ export default function Home() {
             {(() => {
               const filtered = reminders?.filter(r => statusFilter === 'all' || (r.status || 'pending') === statusFilter);
               if (!filtered || filtered.length === 0) {
-                return <p style={{ marginTop: '1rem', fontStyle: 'italic' }}>No {statusFilter} reminders.</p>;
+                return (
+                  <>
+                    <p style={{ marginTop: '1rem', fontStyle: 'italic' }}>No {statusFilter} reminders.</p>
+                  </>
+                );
               }
               return filtered.map((r) => (
                 <div key={r.id} className="reminder-card">
                   <div className="reminder-meta">
                     <span className="tag">
-                      {Math.abs(Date.now() - new Date(r.scheduled_time).getTime()) < 5 * 60 * 1000 ? 'Now' : 'Scheduled'}
+                      {Math.abs(Date.now() - new Date(r.scheduled_at).getTime()) < 5 * 60 * 1000 ? 'Now' : 'Scheduled'}
                     </span>
                     <span className="time">
-                      {new Date(r.scheduled_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      {new Date(r.scheduled_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </span>
                   </div>
 
-                  <p className="reminder-title">{r.content_text}</p>
+                  <p className="reminder-title">{r.body}</p>
 
                   {r.status === 'snoozed' && (
                     <p className="snoozed-until">
@@ -262,9 +280,9 @@ export default function Home() {
                     <div className="reminder-actions">
                       <button onClick={() => {
                         setReminderRecipient(r.recipient_id);
-                        setReminderSubject(r.content_title);
-                        setReminderBody(r.content_text);
-                        setReminderTime(new Date(r.scheduled_time).toISOString().slice(0, 16));
+                        setReminderSubject(r.subject);
+                        setReminderBody(r.body);
+                        setReminderTime(new Date(r.scheduled_at).toISOString().slice(0, 16));
                         setShowReminderModal(true);
                       }}>
                         Edit
@@ -297,10 +315,46 @@ export default function Home() {
         <div className="nav-item" onClick={() => navigate('/circle')}>👥 Circle</div>
         <div className="nav-item" onClick={() => navigate('/account')}>⚙️ Account</div>
       </footer>
+      
+
+      {showSelectRecipient && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <h3>Select a Circle Member</h3>
+            <ul>
+              {circleMembers.map((member) => (
+                <li key={member.member_id} style={{ marginBottom: '12px', listStyleType: 'none' }}>
+                  <button
+                    style={{
+                      width: '100%',
+                      padding: '10px',
+                      borderRadius: '6px',
+                      backgroundColor: '#f9f9f9',
+                      border: '1px solid #ccc',
+                      textAlign: 'left',
+                      fontWeight: 'bold',
+                      color: '#333'
+                    }}
+                    onClick={() => {
+                      setReminderRecipient(member.member_id);
+                      setSelectedRecipient(`${member.relationship}`);
+                      setShowSelectRecipient(false);
+                      setShowReminderModal(true);
+                    }}
+                  >
+                    {`${member.full_name || 'Name'} - ${member.username || 'username'} - ${member.relationship}`}
+                  </button>
+                </li>
+              ))}
+            </ul>
+            <button onClick={() => setShowSelectRecipient(false)}>Cancel</button>
+          </div>
+        </div>
+      )}
       {showReminderModal && (
         <div className="modal-overlay">
           <div className="modal-content">
-            <h3>New Reminder</h3>
+            <h3>Create Reminder {selectedRecipient && `for ${selectedRecipient}`}</h3>
 
             {reminderError ? (
               <p style={{ color: 'red' }}>{reminderError}</p>
@@ -352,9 +406,9 @@ export default function Home() {
                         {
                           sender_id: user.id,
                           recipient_id: reminderRecipient,
-                          content_text: reminderBody,
-                          content_title: reminderSubject,
-                          scheduled_time: reminderTime,
+                          body: reminderBody,
+                          subject: reminderSubject,
+                          scheduled_at: reminderTime,
                           read: false,
                           status: 'pending'
                         }
