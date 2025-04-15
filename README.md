@@ -41,8 +41,7 @@ RemindifyCircle is a smart, circle-based reminder web application designed to he
 
 ## 🚀 Live Demo
 
-🌐 Vercel: [https://your-vercel.vercel.app](https://your-vercel.vercel.app)
-
+🌐 Vercel: http://remindify-circle.vercel.app/
 ## 🛠️ Run Locally
 
 1. Clone the repository:
