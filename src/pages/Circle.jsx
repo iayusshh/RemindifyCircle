@@ -6,6 +6,7 @@ import './Circle.css';
 export default function Circle() {
   const [circle, setCircle] = useState([]);
   const [requests, setRequests] = useState([]);
+  const [sentRequests, setSentRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [searchUsername, setSearchUsername] = useState('');
@@ -16,6 +17,7 @@ export default function Circle() {
   const [relationship, setRelationship] = useState('');
   const [editingRelationshipId, setEditingRelationshipId] = useState(null);
   const [newRelationship, setNewRelationship] = useState('');
+  const [showSentModal, setShowSentModal] = useState(false);
 
   useEffect(() => {
     const applyPreferences = async () => {
@@ -40,33 +42,53 @@ export default function Circle() {
     const fetchCircle = async () => {
       const { data: { user } } = await supabase.auth.getUser();
 
-      const { data: members } = await supabase
-        .from('circle')
-        .select('sender_id, recipient_id, relationship')
-        .or(`sender_id.eq.${user.id},recipient_id.eq.${user.id}`)
-        .eq('status', 'accepted');
-
-      const filteredMembers = members.map((m) => ({
-        member_id: m.sender_id === user.id ? m.recipient_id : m.sender_id,
-        relationship: m.relationship || 'Friend'
-      }));
-
-      setCircle(filteredMembers);
-
-      // Pending requests sent TO this user
-      const { data: reqs } = await supabase
+      const { data: raw } = await supabase
         .from('circle')
         .select(`
           id,
           sender_id,
-          users!circle_sender_id_fkey (
-            username
+          recipient_id,
+          relationship,
+          status,
+          created_at,
+          sender:sender_id (
+            username,
+            full_name
+          ),
+          recipient:recipient_id (
+            username,
+            full_name
           )
         `)
-        .eq('recipient_id', user.id)
-        .eq('status', 'pending');
+        .or(`sender_id.eq.${user.id},recipient_id.eq.${user.id}`);
 
-      if (reqs) setRequests(reqs);
+      const circleMembers = raw.filter(c =>
+        c.status === 'accepted' &&
+        (c.sender_id === user.id || c.recipient_id === user.id)
+      ).map(c => ({
+        ...(c.sender_id === user.id ? {
+          member_id: c.recipient_id,
+          username: c.recipient?.username,
+          full_name: c.recipient?.full_name
+        } : {
+          member_id: c.sender_id,
+          username: c.sender?.username,
+          full_name: c.sender?.full_name
+        }),
+        relationship: c.relationship || 'Friend',
+        status: c.status
+      }));
+
+      const pendingRequests = raw.filter(c =>
+        c.status === 'pending' && c.recipient_id === user.id
+      );
+
+      const sentRequests = raw.filter(c =>
+        c.status === 'pending' && c.sender_id === user.id
+      );
+      setCircle(circleMembers);
+      setRequests(pendingRequests);
+      setSentRequests(sentRequests);
       setLoading(false);
     };
 
@@ -83,6 +105,12 @@ export default function Circle() {
   };
 
   const removeMember = async (memberId) => {
+  const confirm = window.confirm(
+    "Are you sure you want to remove this contact from your circle?\n\nThis action cannot be undone. You both will be removed from each other's circle and must send a new request to reconnect."
+  );
+
+    if (!confirm) return;
+
     const { data: { user } } = await supabase.auth.getUser();
 
     await supabase
@@ -90,7 +118,8 @@ export default function Circle() {
       .delete()
       .or(`and(sender_id.eq.${user.id},recipient_id.eq.${memberId}),and(sender_id.eq.${memberId},recipient_id.eq.${user.id})`);
 
-    setCircle(prev => prev.filter(c => c.member_id !== memberId));
+  setCircle(prev => prev.filter(c => c.member_id !== memberId));
+  alert("Contact has been removed from your circle.");
   };
 
   return (
@@ -102,18 +131,23 @@ export default function Circle() {
         </div>
 
         <input type="text" className="search compact-search" placeholder="Search your circle" onChange={(e) => setSearchUsername(e.target.value)} />
-        <button className="pending-btn" onClick={() => setShowPendingModal(true)}>View Pending Requests</button>
+        <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
+          <button className="pending-btn" onClick={() => setShowSentModal(true)}>Requests Sent</button>
+          <button className="pending-btn" onClick={() => setShowPendingModal(true)}>View Pending Requests</button>
+        </div>
 
         {requests.length > 0 && (
           <div className="pending-request">
             <strong>Pending Contact Requests</strong>
             {requests.map((r) => (
               <div className="request-item" key={r.id}>
-                <span>{r.users?.username || r.sender_id} <em style={{ fontSize: '0.85em', color: '#888' }}>⏳ Pending</em></span>
+                <span>{r.sender?.username || r.sender_id} <em style={{ fontSize: '0.85em', color: '#888' }}>⏳ Pending</em></span>
                 <div>
                   <button
                     className="reject-btn"
                     onClick={async () => {
+                      const confirmReject = window.confirm("Are you sure you want to reject this request?");
+                      if (!confirmReject) return;
                       await supabase
                         .from('circle')
                         .delete()
@@ -127,6 +161,40 @@ export default function Circle() {
                 </div>
               </div>
             ))}
+          </div>
+        )}
+
+        {showSentModal && (
+          <div className="modal-overlay">
+            <div className="modal-content fade-in scale-up" style={{ backgroundColor: '#fff', color: '#000', maxHeight: '70vh', overflowY: 'auto' }}>
+              <h3>Requests Sent</h3>
+              {sentRequests.length === 0 ? (
+                <p>No outgoing requests</p>
+              ) : (
+                sentRequests.map((r) => (
+                  <div className="request-item" key={r.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                    <span>
+                      To: <strong>{r.recipient?.username || r.recipient_id}</strong><br />
+                      <small>{new Date(r.created_at).toLocaleString()}</small>
+                    </span>
+                    <button
+                      style={{ backgroundColor: '#fee2e2', color: '#b91c1c' }}
+                      onClick={async () => {
+                        const confirmCancel = window.confirm("Are you sure you want to cancel this request?");
+                        if (!confirmCancel) return;
+                        await supabase.from('circle').delete().eq('id', r.id);
+                        setSentRequests(prev => prev.filter(req => req.id !== r.id));
+                      }}
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                ))
+              )}
+              <div style={{ textAlign: 'right', marginTop: '10px' }}>
+                <button onClick={() => setShowSentModal(false)} style={{ backgroundColor: '#eee' }}>Close</button>
+              </div>
+            </div>
           </div>
         )}
 
@@ -172,7 +240,15 @@ export default function Circle() {
                     </>
                   ) : (
                     <>
-                      {m.relationship && <span className="relationship-tag"> ({m.relationship})</span>}
+                      <span>
+                        {m.full_name || m.username || m.member_id}
+                        {m.username && (
+                          <span style={{ fontStyle: 'italic', fontSize: '0.85em', marginLeft: '6px', color: '#555' }}>
+                            @{m.username}
+                          </span>
+                        )}
+                        {m.relationship && <span className="relationship-tag"> ({m.relationship})</span>}
+                      </span>
                       <button onClick={() => {
                         setEditingRelationshipId(m.member_id);
                         setNewRelationship(m.relationship);
@@ -268,7 +344,7 @@ export default function Circle() {
               ) : (
                 requests.map((r) => (
                   <div className="request-item" key={r.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-                    <span>{r.users?.username || r.sender_id} <em style={{ fontSize: '0.85em', color: '#888' }}>⏳ Pending</em></span>
+                    <span>{r.sender?.username || r.sender_id} <em style={{ fontSize: '0.85em', color: '#888' }}>⏳ Pending</em></span>
                     <div>
                       <button
                         style={{ backgroundColor: '#fdd', color: '#900', marginRight: '8px' }}
