@@ -85,9 +85,12 @@ export default function Circle() {
   return (
     <div className="app-wrapper-full">
       <div className="circle-page page-content">
-        <h2>Your Circle</h2>
+        <div className="circle-header spaced-between">
+          <h2>Your Circle</h2>
+          <button className="invite-btn" onClick={() => setShowAddDialog(true)}>+ Add Contact</button>
+        </div>
 
-        <input type="text" className="search" placeholder="Search your circle" />
+        <input type="text" className="search compact-search" placeholder="Search your circle" />
 
         {requests.length > 0 && (
           <div className="pending-request">
@@ -104,25 +107,26 @@ export default function Circle() {
           </div>
         )}
 
-        <h3>Your Circle</h3>
-        {loading ? <p>Loading...</p> : (
-          <ul className="circle-list">
-            {circle.map((m, idx) => (
-              <li key={idx} className="circle-item">
-                <span>{m.relationship}</span>
-                <button className="reject-btn" onClick={() => removeMember(m.member_id)}>✖</button>
-              </li>
-            ))}
-          </ul>
-        )}
-
-        <div className="invite-section">
-          <button className="invite-btn" onClick={() => setShowAddDialog(true)}>+ Add Contact</button>
+        <div className="circle-section">
+          {circle.length === 0 ? (
+            <div className="empty-circle-wrapper center-message">
+              <p className="empty-circle-msg">Your circle is empty. Add someone!</p>
+            </div>
+          ) : (
+            <ul className="circle-list">
+              {circle.map((m, idx) => (
+                <li key={idx} className="circle-item">
+                  <span>{m.relationship}</span>
+                  <button className="reject-btn" onClick={() => removeMember(m.member_id)}>✖</button>
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
 
         {showAddDialog && (
           <div className="modal-overlay">
-            <div className="modal-content">
+            <div className="modal-content fade-in scale-up" style={{ backgroundColor: '#fff', color: '#000' }}>
               <h3>Add Contact</h3>
 
               <input
@@ -130,23 +134,24 @@ export default function Circle() {
                 placeholder="Enter username"
                 value={searchUsername}
                 onChange={(e) => setSearchUsername(e.target.value)}
+                style={{ backgroundColor: '#fff', color: '#000' }}
               />
 
               {searchError && <p style={{ color: 'red' }}>{searchError}</p>}
 
               <div className="modal-actions">
-                <button onClick={() => setShowAddDialog(false)}>Cancel</button>
+                <button onClick={() => setShowAddDialog(false)} style={{ backgroundColor: '#fff', color: '#000' }}>Cancel</button>
                 <button
                   className="primary-button"
                   onClick={async () => {
                     const { data: { user } } = await supabase.auth.getUser();
-                    const { data: match } = await supabase
+                    const { data: match, error } = await supabase
                       .from('users')
                       .select('id, email')
                       .eq('username', searchUsername)
-                      .single();
+                      .maybeSingle();
 
-                    if (!match) {
+                    if (!match || error) {
                       setSearchError('User not found');
                     } else if (match.id === user.id) {
                       setSearchError('You cannot add yourself');
@@ -171,7 +176,7 @@ export default function Circle() {
           </div>
         )}
 
-        <div className="footer-nav">
+        <div className="footer-nav fixed-footer">
           <div className="nav-item" onClick={() => navigate('/home')}>🏠 Home</div>
           <div className="nav-item active" onClick={() => navigate('/circle')}>👥 Circle</div>
           <div className="nav-item" onClick={() => navigate('/account')}>⚙️ Account</div>

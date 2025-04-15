@@ -11,32 +11,37 @@ const Account = () => {
   const [showToast, setShowToast] = useState(false);
   const [usernameUpdated, setUsernameUpdated] = useState(false);
   const [usernameError, setUsernameError] = useState('');
+  const [initialFullName, setInitialFullName] = useState('');
+  const [initialUsername, setInitialUsername] = useState('');
   const navigate = useNavigate();
   const usernameInputRef = useRef(null);
 
+  const getUser = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    setUser(user);
+    
+    const { data: userRow } = await supabase
+      .from('users')
+      .select('username, username_updated, full_name')
+      .eq('id', user.id)
+      .single();
+
+    setUpdatedUsername(userRow?.username || 'username');
+    setInitialUsername(userRow?.username || 'username');
+    setUpdatedFullName(userRow?.full_name || 'Full Name');
+    setInitialFullName(userRow?.full_name || 'Full Name');
+    setUsernameUpdated(userRow?.username_updated || false);
+
+    if (!userRow?.username) {
+      alert('Please set your unique username. This can only be changed once.');
+      setEditMode(true);
+      setTimeout(() => {
+        usernameInputRef.current?.focus();
+      }, 100);
+    }
+  };
+
   useEffect(() => {
-    const getUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      setUser(user);
-      setUpdatedFullName(user?.user_metadata?.full_name || 'Full Name');
-      setUpdatedUsername(user?.user_metadata?.username || 'username');
-
-      const { data } = await supabase
-        .from('users')
-        .select('username_updated, username')
-        .eq('id', user.id)
-        .single();
-
-      setUsernameUpdated(data?.username_updated || false);
-
-      if (!data?.username) {
-        alert('Please set your unique username. This can only be changed once.');
-        setEditMode(true);
-        setTimeout(() => {
-          usernameInputRef.current?.focus();
-        }, 100);
-      }
-    };
     getUser();
   }, []);
 
@@ -61,6 +66,7 @@ const Account = () => {
               onChange={(e) => setUpdatedUsername(e.target.value)}
               placeholder="Username"
               ref={usernameInputRef}
+              disabled={usernameUpdated}
             />
             <input
               type="text"
@@ -72,10 +78,14 @@ const Account = () => {
             <div className="modal-actions">
               <button className="cancel-btn" onClick={() => {
                 setEditMode(false);
-                setUpdatedFullName(fullname);
-                setUpdatedUsername(username);
+                setUpdatedFullName(initialFullName);
+                setUpdatedUsername(initialUsername);
               }}>Cancel</button>
-              <button className="save-btn" onClick={async () => {
+              <button className="save-btn" disabled={
+                (updatedFullName === initialFullName && updatedUsername === initialUsername) ||
+                updatedUsername.trim().length < 3 ||
+                updatedFullName.trim().length < 3
+              } onClick={async () => {
                 const { data: { user } } = await supabase.auth.getUser();
 
                 if (!updatedFullName.trim() || !updatedUsername.trim()) {
@@ -93,17 +103,15 @@ const Account = () => {
                   return;
                 }
 
-                if (!usernameUpdated && updatedUsername !== user?.user_metadata?.username) {
-                  const { data: existing } = await supabase
-                    .from('users')
-                    .select('id')
-                    .eq('username', updatedUsername)
-                    .single();
+                const { data: existingUser, error: userCheckError } = await supabase
+                  .from('users')
+                  .select('id')
+                  .eq('username', updatedUsername)
+                  .single();
 
-                  if (existing) {
-                    setUsernameError('Username already taken');
-                    return;
-                  }
+                if (!usernameUpdated && existingUser && existingUser.id !== user.id) {
+                  setUsernameError('Username already taken');
+                  return;
                 }
 
                 const updateData = { full_name: updatedFullName };
@@ -118,9 +126,10 @@ const Account = () => {
                   .eq('id', user.id);
 
                 if (!error) {
-                  setFullname(updatedFullName);
-                  setUsername(updatedUsername);
+                  setInitialFullName(updatedFullName);
+                  setInitialUsername(updatedUsername);
                   setEditMode(false);
+                  await getUser();
                   setShowToast(true);
                   setTimeout(() => setShowToast(false), 3000);
                   setUsernameError('');
