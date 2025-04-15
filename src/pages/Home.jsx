@@ -38,7 +38,7 @@ export default function Home() {
         )
       `)
       .eq('recipient_id', user.id)
-      .order('scheduled_time', { ascending: true });
+      .order('scheduled_at', { ascending: true });
 
     if (data) {
       const mapped = data.map((r) => ({
@@ -138,7 +138,7 @@ export default function Home() {
 
     const { error } = await supabase
       .from('reminders')
-      .update({ scheduled_time: newTime })
+      .update({ scheduled_at: newTime, status: 'snoozed' })
       .eq('id', reminderId);
 
     if (!error) {
@@ -198,12 +198,16 @@ export default function Home() {
           <main className="main-content">
             <div className="title-row">
               <h2>Today's reminders</h2>
-              <button className="edit-btn" onClick={() => setEditMode(!editMode)}>
-                {editMode ? 'Done Editing' : '✏️ Edit Reminders'}
+              <button
+                className="edit-btn"
+                onClick={() => setEditMode(!editMode)}
+                style={{ marginLeft: '10px', fontSize: '1.2rem', background: 'none', border: 'none', cursor: 'pointer' }}
+              >
+                ✏️
               </button>
             </div>
             <div className="filter-tabs">
-              {['all', 'pending', 'snoozed'].map(status => (
+              {['all', 'pending', 'snoozed', 'done'].map(status => (
                 <button
                   key={status}
                   className={`filter-btn ${statusFilter === status ? 'active-filter' : ''}`}
@@ -213,9 +217,15 @@ export default function Home() {
                 </button>
               ))}
             </div>
-
+            <div style={{ marginBottom: '1rem' }}></div>
             {(() => {
-              const filtered = reminders?.filter(r => statusFilter === 'all' || (r.status || 'pending') === statusFilter);
+              const filtered = reminders?.filter(r => {
+                const reminderStatus = r.status || 'pending';
+                return (
+                  (statusFilter === 'all' && reminderStatus !== 'done') ||
+                  reminderStatus === statusFilter
+                );
+              });
               if (!filtered || filtered.length === 0) {
                 return (
                   <>
@@ -234,12 +244,12 @@ export default function Home() {
                     </span>
                   </div>
 
-                  <p className="reminder-title">{r.body}</p>
+                  <h3 className="reminder-subject">{r.subject}</h3>
 
                   {r.status === 'snoozed' && (
                     <p className="snoozed-until">
-                      Snoozed until: {new Date(r.scheduled_time).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })}
-                    </p>
+                    Snoozed until: {r.scheduled_at ? new Date(r.scheduled_at).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' }) : 'Not Scheduled'}
+                  </p>
                   )}
 
                   <p className="reminder-from">
@@ -258,10 +268,10 @@ export default function Home() {
                       </button>
                     ))}
                   </div>
-
+                  
                   {!editMode && r.status !== 'done' && (
-                    <button
-                      className="done-btn"
+                    <button className="done-btn aligned-right"
+                      style={{ marginTop: '-27px' }}
                       onClick={async () => {
                         const { error } = await supabase
                           .from('reminders')
@@ -275,28 +285,50 @@ export default function Home() {
                       Mark as Done
                     </button>
                   )}
+                  
+                  {r.status === 'done' && !editMode && (
+                    <button
+                      className="undo-btn aligned-right"
+                      style={{ marginTop: '-27px' }}
+                      onClick={async () => {
+                        const { error } = await supabase
+                          .from('reminders')
+                          .update({ status: 'pending' })
+                          .eq('id', r.id);
+                        if (!error) {
+                          fetchReminders();
+                        }
+                      }}
+                    >
+                      Undo
+                    </button>
+                  )}
 
                   {editMode && (
                     <div className="reminder-actions">
-                      <button onClick={() => {
-                        setReminderRecipient(r.recipient_id);
-                        setReminderSubject(r.subject);
-                        setReminderBody(r.body);
-                        setReminderTime(new Date(r.scheduled_at).toISOString().slice(0, 16));
-                        setShowReminderModal(true);
-                      }}>
-                        Edit
-                      </button>
-
                       <button
+                        style={{
+                          backgroundColor: '#ef4444',
+                          color: '#fff',
+                          position: 'relative',
+                          left: 'calc(100% - 80px)',
+                          marginTop: '-30px'
+                        }}
+                        
                         onClick={async () => {
+                          const confirmDelete = window.confirm('Are you sure you want to delete this reminder? This action cannot be undone.');
+                          if (!confirmDelete) return;
+ 
                           const { error } = await supabase
                             .from('reminders')
                             .delete()
                             .eq('id', r.id);
-
+ 
                           if (!error) {
-                            fetchReminders();
+                            await fetchReminders();
+                            setReminders(prev => prev.filter(reminder => reminder.id !== r.id));
+                          } else {
+                            console.error('Delete error:', error);
                           }
                         }}
                       >
