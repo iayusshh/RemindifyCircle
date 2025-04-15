@@ -34,7 +34,8 @@ export default function Signup() {
     if (signUpError) {
       setError(signUpError.message);
     } else {
-      navigate('/signup-success');
+      alert('Signup successful! Please check your email to verify your account.');
+      navigate('/');
     }
   };
 

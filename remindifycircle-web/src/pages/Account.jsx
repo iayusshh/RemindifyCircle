@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { supabase } from '../supabaseClient';
 import { useNavigate } from 'react-router-dom';
 import './Account.css';
@@ -12,6 +12,7 @@ const Account = () => {
   const [usernameUpdated, setUsernameUpdated] = useState(false);
   const [usernameError, setUsernameError] = useState('');
   const navigate = useNavigate();
+  const usernameInputRef = useRef(null);
 
   useEffect(() => {
     const getUser = async () => {
@@ -22,10 +23,19 @@ const Account = () => {
 
       const { data } = await supabase
         .from('users')
-        .select('username_updated')
+        .select('username_updated, username')
         .eq('id', user.id)
         .single();
+
       setUsernameUpdated(data?.username_updated || false);
+
+      if (!data?.username) {
+        alert('Please set your unique username. This can only be changed once.');
+        setEditMode(true);
+        setTimeout(() => {
+          usernameInputRef.current?.focus();
+        }, 100);
+      }
     };
     getUser();
   }, []);
@@ -50,6 +60,7 @@ const Account = () => {
               value={updatedUsername}
               onChange={(e) => setUpdatedUsername(e.target.value)}
               placeholder="Username"
+              ref={usernameInputRef}
             />
             <input
               type="text"

@@ -37,16 +37,24 @@ export default function Circle() {
 
       const { data: members } = await supabase
         .from('circle')
-        .select('member_id, relationship')
-        .eq('owner_id', user.id);
+        .select('sender_id, recipient_id, relationship')
+        .or(`sender_id.eq.${user.id},recipient_id.eq.${user.id}`)
+        .eq('status', 'accepted');
 
+      const filteredMembers = members.map((m) => ({
+        member_id: m.sender_id === user.id ? m.recipient_id : m.sender_id,
+        relationship: m.relationship || 'Friend'
+      }));
+
+      setCircle(filteredMembers);
+
+      // Pending requests sent TO this user
       const { data: reqs } = await supabase
-        .from('circle_requests')
-        .select('id, from_user_id, to_user_email, status')
-        .eq('to_user_email', user.email)
+        .from('circle')
+        .select('id, sender_id, sender:users!circle_sender_id_fkey(username)')
+        .eq('recipient_id', user.id)
         .eq('status', 'pending');
 
-      if (members) setCircle(members);
       if (reqs) setRequests(reqs);
       setLoading(false);
     };
@@ -55,15 +63,8 @@ export default function Circle() {
   }, []);
 
   const acceptRequest = async (request) => {
-    const { data: { user } } = await supabase.auth.getUser();
-
-    await supabase.from('circle').insert([
-      { owner_id: request.from_user_id, member_id: user.id, relationship: 'Friend' },
-      { owner_id: user.id, member_id: request.from_user_id, relationship: 'Friend' },
-    ]);
-
     await supabase
-      .from('circle_requests')
+      .from('circle')
       .update({ status: 'accepted' })
       .eq('id', request.id);
 
@@ -76,7 +77,7 @@ export default function Circle() {
     await supabase
       .from('circle')
       .delete()
-      .match({ owner_id: user.id, member_id: memberId });
+      .or(`and(sender_id.eq.${user.id},recipient_id.eq.${memberId}),and(sender_id.eq.${memberId},recipient_id.eq.${user.id})`);
 
     setCircle(prev => prev.filter(c => c.member_id !== memberId));
   };
@@ -93,7 +94,7 @@ export default function Circle() {
             <strong>Pending Contact Requests</strong>
             {requests.map((r) => (
               <div className="request-item" key={r.id}>
-                <span>{r.to_user_email}</span>
+                <span>{r.sender?.username || r.sender_id}</span>
                 <div>
                   <button className="reject-btn">✖</button>
                   <button className="accept-btn" onClick={() => acceptRequest(r)}>Accept</button>
@@ -150,8 +151,12 @@ export default function Circle() {
                     } else if (match.id === user.id) {
                       setSearchError('You cannot add yourself');
                     } else {
-                      await supabase.from('circle_requests').insert([
-                        { from_user_id: user.id, to_user_email: match.email }
+                      await supabase.from('circle').insert([
+                        {
+                          sender_id: user.id,
+                          recipient_id: match.id,
+                          status: 'pending'
+                        }
                       ]);
                       setShowAddDialog(false);
                       setSearchUsername('');

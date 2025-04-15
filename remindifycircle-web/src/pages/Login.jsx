@@ -13,10 +13,26 @@ export default function Login() {
     e.preventDefault();
     setError(null);
 
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
 
-    if (error) setError(error.message);
-    else navigate('/home');
+    if (error) {
+      setError(error.message);
+    } else if (!data.user?.confirmed_at) {
+      alert('Please verify your email before logging in.');
+      } else {
+          const { data: userData } = await supabase
+            .from('users')
+            .select('username')
+            .eq('id', data.user.id)
+            .single();
+
+          if (!userData?.username) {
+            alert('Welcome! Please choose your unique username (cannot be changed later).');
+            navigate('/account');
+          } else {
+            navigate('/home');
+          }
+      }
   };
 
   return (
