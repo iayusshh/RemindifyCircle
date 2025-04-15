@@ -13,6 +13,9 @@ export default function Circle() {
   const navigate = useNavigate();
   const [preferences, setPreferences] = useState({ largeText: false });
   const [showPendingModal, setShowPendingModal] = useState(false);  
+  const [relationship, setRelationship] = useState('');
+  const [editingRelationshipId, setEditingRelationshipId] = useState(null);
+  const [newRelationship, setNewRelationship] = useState('');
 
   useEffect(() => {
     const applyPreferences = async () => {
@@ -53,7 +56,13 @@ export default function Circle() {
       // Pending requests sent TO this user
       const { data: reqs } = await supabase
         .from('circle')
-        .select('id, sender_id, sender:users!circle_sender_id_fkey(username)')
+        .select(`
+          id,
+          sender_id,
+          users!circle_sender_id_fkey (
+            username
+          )
+        `)
         .eq('recipient_id', user.id)
         .eq('status', 'pending');
 
@@ -92,7 +101,7 @@ export default function Circle() {
           <button className="invite-btn" onClick={() => setShowAddDialog(true)}>+ Add Contact</button>
         </div>
 
-        <input type="text" className="search compact-search" placeholder="Search your circle" />
+        <input type="text" className="search compact-search" placeholder="Search your circle" onChange={(e) => setSearchUsername(e.target.value)} />
         <button className="pending-btn" onClick={() => setShowPendingModal(true)}>View Pending Requests</button>
 
         {requests.length > 0 && (
@@ -100,7 +109,7 @@ export default function Circle() {
             <strong>Pending Contact Requests</strong>
             {requests.map((r) => (
               <div className="request-item" key={r.id}>
-                <span>{r.sender?.username || r.sender_id}</span>
+                <span>{r.users?.username || r.sender_id} <em style={{ fontSize: '0.85em', color: '#888' }}>⏳ Pending</em></span>
                 <div>
                   <button
                     className="reject-btn"
@@ -128,9 +137,48 @@ export default function Circle() {
             </div>
           ) : (
             <ul className="circle-list">
-              {circle.map((m, idx) => (
+              {circle.filter(m => m.relationship.toLowerCase().includes(searchUsername.toLowerCase())).map((m, idx) => (
                 <li key={idx} className="circle-item">
-                  <span>{m.relationship}</span>
+                  {editingRelationshipId === m.member_id ? (
+                    <>
+                      <input
+                        value={newRelationship}
+                        onChange={(e) => setNewRelationship(e.target.value)}
+                        style={{ marginLeft: '8px', padding: '2px 4px' }}
+                      />
+                      <button
+                        onClick={async () => {
+                          const { data: { user } } = await supabase.auth.getUser();
+                          const { error } = await supabase
+                            .from('circle')
+                            .update({ relationship: newRelationship })
+                            .or(`and(sender_id.eq.${user.id},recipient_id.eq.${m.member_id}),and(sender_id.eq.${m.member_id},recipient_id.eq.${user.id})`);
+
+                          if (!error) {
+                            setCircle(prev =>
+                              prev.map(c =>
+                                c.member_id === m.member_id
+                                  ? { ...c, relationship: newRelationship }
+                                  : c
+                              )
+                            );
+                            setEditingRelationshipId(null);
+                            setNewRelationship('');
+                          }
+                        }}
+                      >
+                        💾
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      {m.relationship && <span className="relationship-tag"> ({m.relationship})</span>}
+                      <button onClick={() => {
+                        setEditingRelationshipId(m.member_id);
+                        setNewRelationship(m.relationship);
+                      }}>✏️</button>
+                    </>
+                  )}
                   <button className="reject-btn" onClick={() => removeMember(m.member_id)}>✖</button>
                 </li>
               ))}
@@ -151,6 +199,14 @@ export default function Circle() {
                 style={{ backgroundColor: '#fff', color: '#000' }}
               />
 
+              <input
+                type="text"
+                placeholder="Relationship (optional)"
+                value={relationship}
+                onChange={(e) => setRelationship(e.target.value)}
+                style={{ backgroundColor: '#fff', color: '#000', marginTop: '10px' }}
+              />
+
               {searchError && <p style={{ color: 'red' }}>{searchError}</p>}
 
               <div className="modal-actions">
@@ -167,20 +223,33 @@ export default function Circle() {
 
                     if (!match || error) {
                       setSearchError('User not found');
-                    } else if (match.id === user.id) {
-                      setSearchError('You cannot add yourself');
-                    } else {
-                      await supabase.from('circle').insert([
-                        {
-                          sender_id: user.id,
-                          recipient_id: match.id,
-                          status: 'pending'
-                        }
-                      ]);
-                      setShowAddDialog(false);
-                      setSearchUsername('');
-                      setSearchError('');
+                      return;
+                    } 
+
+                    const { data: existing } = await supabase
+                      .from('circle')
+                      .select('id')
+                      .or(`and(sender_id.eq.${user.id},recipient_id.eq.${match.id}),and(sender_id.eq.${match.id},recipient_id.eq.${user.id})`)
+                      .neq('status', 'rejected');
+
+                    if (existing.length > 0) {
+                      setSearchError('You already have a request or connection with this user.');
+                      return;
                     }
+
+                    await supabase.from('circle').insert([
+                      {
+                        sender_id: user.id,
+                        recipient_id: match.id,
+                        relationship,
+                        status: 'pending'
+                      }
+                    ]);
+                    alert('Request sent!');
+                    setShowAddDialog(false);
+                    setSearchUsername('');
+                    setSearchError('');
+                    setRelationship('');
                   }}
                 >
                   Send Request
@@ -199,7 +268,7 @@ export default function Circle() {
               ) : (
                 requests.map((r) => (
                   <div className="request-item" key={r.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-                    <span>{r.sender?.username || r.sender_id}</span>
+                    <span>{r.users?.username || r.sender_id} <em style={{ fontSize: '0.85em', color: '#888' }}>⏳ Pending</em></span>
                     <div>
                       <button
                         style={{ backgroundColor: '#fdd', color: '#900', marginRight: '8px' }}
