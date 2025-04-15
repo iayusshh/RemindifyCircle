@@ -314,3 +314,18 @@ body {
     padding: 1px 5px;
   }
 }
+.filter-btn {
+  padding: 10px 20px;
+  border-radius: 8px;
+  background-color: #f0f0f0;
+  border: none;
+  margin-right: 10px;
+  color: #333;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.filter-btn.active-filter {
+  background-color: #2563eb;
+  color: white;
+}

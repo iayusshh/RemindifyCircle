@@ -11,7 +11,9 @@ export default function Circle() {
   const [searchUsername, setSearchUsername] = useState('');
   const [searchError, setSearchError] = useState('');
   const navigate = useNavigate();
-  const [preferences, setPreferences] = useState({ largeText: false });  
+  const [preferences, setPreferences] = useState({ largeText: false });
+  const [showPendingModal, setShowPendingModal] = useState(false);  
+
   useEffect(() => {
     const applyPreferences = async () => {
       const { data: { user } } = await supabase.auth.getUser();
@@ -91,6 +93,7 @@ export default function Circle() {
         </div>
 
         <input type="text" className="search compact-search" placeholder="Search your circle" />
+        <button className="pending-btn" onClick={() => setShowPendingModal(true)}>View Pending Requests</button>
 
         {requests.length > 0 && (
           <div className="pending-request">
@@ -99,7 +102,18 @@ export default function Circle() {
               <div className="request-item" key={r.id}>
                 <span>{r.sender?.username || r.sender_id}</span>
                 <div>
-                  <button className="reject-btn">✖</button>
+                  <button
+                    className="reject-btn"
+                    onClick={async () => {
+                      await supabase
+                        .from('circle')
+                        .delete()
+                        .eq('id', r.id);
+                      setRequests(prev => prev.filter(req => req.id !== r.id));
+                    }}
+                  >
+                    ✖
+                  </button>
                   <button className="accept-btn" onClick={() => acceptRequest(r)}>Accept</button>
                 </div>
               </div>
@@ -171,6 +185,43 @@ export default function Circle() {
                 >
                   Send Request
                 </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {showPendingModal && (
+          <div className="modal-overlay">
+            <div className="modal-content fade-in scale-up" style={{ backgroundColor: '#fff', color: '#000', maxHeight: '70vh', overflowY: 'auto' }}>
+              <h3>Pending Contact Requests</h3>
+              {requests.length === 0 ? (
+                <p>No pending requests</p>
+              ) : (
+                requests.map((r) => (
+                  <div className="request-item" key={r.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                    <span>{r.sender?.username || r.sender_id}</span>
+                    <div>
+                      <button
+                        style={{ backgroundColor: '#fdd', color: '#900', marginRight: '8px' }}
+                        onClick={async () => {
+                          await supabase.from('circle').delete().eq('id', r.id);
+                          setRequests(prev => prev.filter(req => req.id !== r.id));
+                        }}
+                      >
+                        Reject
+                      </button>
+                      <button
+                        style={{ backgroundColor: '#dfd', color: '#070' }}
+                        onClick={() => acceptRequest(r)}
+                      >
+                        Accept
+                      </button>
+                    </div>
+                  </div>
+                ))
+              )}
+              <div style={{ textAlign: 'right', marginTop: '10px' }}>
+                <button onClick={() => setShowPendingModal(false)} style={{ backgroundColor: '#eee' }}>Close</button>
               </div>
             </div>
           </div>

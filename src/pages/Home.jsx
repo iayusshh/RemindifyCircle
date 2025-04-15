@@ -17,18 +17,39 @@ export default function Home() {
   const [reminderBody, setReminderBody] = useState('');
   const [reminderTime, setReminderTime] = useState('');
   const [editMode, setEditMode] = useState(false);
+  const [statusFilter, setStatusFilter] = useState('all');
   const navigate = useNavigate();
 
+  const fetchReminders = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+
+    const { data, error } = await supabase
+      .from('reminders')
+      .select(`
+        id,
+        content_title,
+        content_text,
+        scheduled_time,
+        status,
+        sender:sender_id (
+          username
+        )
+      `)
+      .eq('recipient_id', user.id)
+      .order('scheduled_time', { ascending: true });
+
+    if (data) {
+      const mapped = data.map((r) => ({
+        ...r,
+        sender_name: r.sender?.username || 'Anonymous'
+      }));
+      setReminders(mapped);
+    }
+
+    if (error) console.error('Fetch reminders error:', error);
+  };
+
   useEffect(() => {
-    const fetchReminders = async () => {
-      const { data } = await supabase
-        .from('reminders')
-        .select('*')
-        .order('scheduled_time', { ascending: true });
-
-      if (data) setReminders(data);
-    };
-
     const fetchUserProfile = async () => {
       const {
         data: { user },
@@ -167,11 +188,24 @@ export default function Home() {
                 {editMode ? 'Done Editing' : '✏️ Edit Reminders'}
               </button>
             </div>
+            <div className="filter-tabs">
+              {['all', 'pending', 'snoozed'].map(status => (
+                <button
+                  key={status}
+                  className={`filter-btn ${statusFilter === status ? 'active-filter' : ''}`}
+                  onClick={() => setStatusFilter(status)}
+                >
+                  {status.charAt(0).toUpperCase() + status.slice(1)}
+                </button>
+              ))}
+            </div>
 
-            {reminders.length === 0 ? (
-              <p className="empty-text">No reminders yet.</p>
-            ) : (
-              reminders.map((r) => (
+            {(() => {
+              const filtered = reminders?.filter(r => statusFilter === 'all' || (r.status || 'pending') === statusFilter);
+              if (!filtered || filtered.length === 0) {
+                return <p style={{ marginTop: '1rem', fontStyle: 'italic' }}>No {statusFilter} reminders.</p>;
+              }
+              return filtered.map((r) => (
                 <div key={r.id} className="reminder-card">
                   <div className="reminder-meta">
                     <span className="tag">
@@ -181,10 +215,19 @@ export default function Home() {
                       {new Date(r.scheduled_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </span>
                   </div>
+
                   <p className="reminder-title">{r.content_text}</p>
-                  {r.subtitle && <p className="reminder-subtitle">{r.subtitle}</p>}
-                  <p className="snoozed-until">Snoozed until: {new Date(r.scheduled_time).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })}</p>
-                  <p className="reminder-from">From: <strong>{r.sender_name || 'You'}</strong></p>
+
+                  {r.status === 'snoozed' && (
+                    <p className="snoozed-until">
+                      Snoozed until: {new Date(r.scheduled_time).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })}
+                    </p>
+                  )}
+
+                  <p className="reminder-from">
+                    From: <strong>{r.sender_name}</strong>
+                  </p>
+
                   <div className="snooze-options">
                     {[
                       { label: '5m', value: 5 },
@@ -192,9 +235,29 @@ export default function Home() {
                       { label: '30m', value: 30 },
                       { label: '1h', value: 60 },
                     ].map(({ label, value }) => (
-                      <button key={label} onClick={() => handleSnooze(r.id, value)}>{label}</button>
+                      <button key={label} onClick={() => handleSnooze(r.id, value)}>
+                        {label}
+                      </button>
                     ))}
                   </div>
+
+                  {!editMode && r.status !== 'done' && (
+                    <button
+                      className="done-btn"
+                      onClick={async () => {
+                        const { error } = await supabase
+                          .from('reminders')
+                          .update({ status: 'done' })
+                          .eq('id', r.id);
+                        if (!error) {
+                          fetchReminders();
+                        }
+                      }}
+                    >
+                      Mark as Done
+                    </button>
+                  )}
+
                   {editMode && (
                     <div className="reminder-actions">
                       <button onClick={() => {
@@ -203,21 +266,29 @@ export default function Home() {
                         setReminderBody(r.content_text);
                         setReminderTime(new Date(r.scheduled_time).toISOString().slice(0, 16));
                         setShowReminderModal(true);
-                      }}>Edit</button>
-                      <button onClick={async () => {
-                        const { error } = await supabase
-                          .from('reminders')
-                          .delete()
-                          .eq('id', r.id);
-                        if (!error) {
-                          fetchReminders();
-                        }
-                      }}>Delete</button>
+                      }}>
+                        Edit
+                      </button>
+
+                      <button
+                        onClick={async () => {
+                          const { error } = await supabase
+                            .from('reminders')
+                            .delete()
+                            .eq('id', r.id);
+
+                          if (!error) {
+                            fetchReminders();
+                          }
+                        }}
+                      >
+                        Delete
+                      </button>
                     </div>
                   )}
                 </div>
-              ))
-            )}
+              ));
+            })()}
           </main>
         </div>
       </div>
@@ -284,6 +355,8 @@ export default function Home() {
                           content_text: reminderBody,
                           content_title: reminderSubject,
                           scheduled_time: reminderTime,
+                          read: false,
+                          status: 'pending'
                         }
                       ]);
 
