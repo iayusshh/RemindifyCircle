@@ -365,3 +365,52 @@ body {
   background-color: #e5e7eb;
   transition: background-color 0.3s ease;
 }
+
+@media screen and (max-width: 768px) {
+  .reminder-card {
+    padding: 14px;
+    font-size: 0.95rem;
+  }
+
+  .reminder-title,
+  .reminder-subject {
+    font-size: 1rem;
+  }
+
+  .reminder-meta {
+    flex-direction: column;
+    align-items: flex-start;
+    font-size: 0.8rem;
+  }
+
+  .snooze-options {
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .reminder-actions {
+    justify-content: flex-start;
+  }
+
+  .done-btn,
+  .undo-btn {
+    font-size: 0.85rem;
+    padding: 6px 10px;
+  }
+
+  .filter-tabs {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .filter-btn {
+    font-size: 0.85rem;
+    padding: 6px 12px;
+  }
+
+  .title-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+}
