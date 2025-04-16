@@ -46,7 +46,7 @@ RemindifyCircle is a smart, circle-based reminder web application designed to he
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/your-username/remindifycircle.git
+git clone https://github.com/iayusshh/remindifycircle.git
 ```
 
 2. Install dependencies:
